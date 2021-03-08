@@ -1,17 +1,18 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
 
 const kAndroidUserAgent =
     'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Mobile Safari/537.36';
+// String selectedUrl = 'https://flutter.io';
 String selectedUrl = 'https://www.555exch.one/login';
+
 // ignore: prefer_collection_literals
 final Set<JavascriptChannel> jsChannels = [
   JavascriptChannel(
       name: 'Print',
       onMessageReceived: (JavascriptMessage message) {
-        // print(message.message);
+        print(message.message);
       }),
 ].toSet();
 
@@ -30,7 +31,6 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      debugShowCheckedModeBanner: false,
       routes: {
         '/': (_) => const MyHomePage(title: 'Flutter WebView Demo'),
         '/widget': (_) {
@@ -111,7 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _urlCtrl = TextEditingController(text: selectedUrl);
-  bool isLoad = true;
+  bool isLoad = false;
   @override
   void dispose() {
     // Every listener should be canceled, the same should be done with this stream.
@@ -149,7 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     // Add a listener to on url changed
     _onUrlChanged = flutterWebViewPlugin.onUrlChanged.listen((String url) {
-      //print(url);
+      print(url);
       if (mounted) {
         setState(() {
           _history.add('onUrlChanged: $url');
@@ -159,11 +159,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
     _onProgressChanged =
         flutterWebViewPlugin.onProgressChanged.listen((double progress) {
-      print(progress);
       if (progress == 1) {
         isLoad = false;
         setState(() {});
-      } else {}
+      } else {
+        isLoad = true;
+        setState(() {});
+      }
       if (mounted) {
         setState(() {
           _history.add('onProgressChanged: $progress');
@@ -173,6 +175,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     _onScrollYChanged =
         flutterWebViewPlugin.onScrollYChanged.listen((double y) {
+      print(y);
       if (y == 0) {
         isLoad = true;
         setState(() {});
@@ -221,33 +224,61 @@ class _MyHomePageState extends State<MyHomePage> {
         onWillPop: () async {
           return true;
         },
-        child: SafeArea(
-          child: Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              Container(
-                height: MediaQuery.of(context).size.height - (isLoad ? 80 : 0),
-                child: WebviewScaffold(
-                  url: selectedUrl,
-                  javascriptChannels: jsChannels,
-                  mediaPlaybackRequiresUserGesture: false,
-                  withZoom: true,
-                  withLocalStorage: true,
-                  hidden: false,
-                ),
+        child: Column(
+          children: [
+            GestureDetector(
+              // onPanDown: (d) {
+              //   print(d);
+              // },
+              
+              onVerticalDragEnd: (d){
+        flutterWebViewPlugin.reload();
+
+              },
+              // onVerticalDragDown: (d) {
+              //   print(d);
+              // },
+              child: Container(
+                height: 70,
+                color: Color.fromRGBO(20, 123, 69, 1),
+                child: isLoad
+                    ? Center(child: CircularProgressIndicator())
+                    : Container(),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisAlignment: MainAxisAlignment.center,
+            ),
+            Expanded(
+              child: Stack(
+                alignment: Alignment.bottomCenter,
                 children: [
                   Container(
-                      height: 60,
-                      child: Center(child: CircularProgressIndicator())),
-                  Expanded(child: Container()),
+                    color: Color.fromRGBO(20, 123, 69, 1),
+                    height: MediaQuery.of(context)
+                        .size
+                        .height, //- (isLoad ? 80 : 0),
+                    child: WebviewScaffold(
+                      url: selectedUrl,
+                      javascriptChannels: jsChannels,
+                      mediaPlaybackRequiresUserGesture: false,
+                      withZoom: true,
+                      withLocalStorage: true,
+                      hidden: false,
+                      scrollBar: true,
+                    ),
+                  ),
+                  // Column(
+                  //   crossAxisAlignment: CrossAxisAlignment.stretch,
+                  //   mainAxisAlignment: MainAxisAlignment.center,
+                  //   children: [
+                  //     Container(
+                  //         height: 60,
+                  //         child: Center(child: CircularProgressIndicator())),
+                  //     Expanded(child: Container()),
+                  //   ],
+                  // ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
